@@ -1,7 +1,9 @@
-import { editor, MarkerSeverity, Uri } from "monaco-editor";
-import * as monaco from "monaco-editor";
+// import { editor, MarkerSeverity, Uri } from "monaco-editor";
 import { configureMonacoYaml, type SchemasSettings } from "monaco-yaml";
+import * as monaco from "monaco-editor";
 import * as yaml from "yaml";
+// eslint-disable-next-line import/no-unresolved
+import YamlWorker from "./yaml-worker?worker";
 
 import "./index.css";
 import schema from "./schema.json";
@@ -12,7 +14,7 @@ window.MonacoEnvironment = {
   getWorker(moduleId, label) {
     switch (label) {
       case "yaml":
-        return new Worker(new URL("monaco-yaml/yaml.worker", import.meta.url));
+        return new YamlWorker();
       default:
         throw new Error(`Unknown label ${label}`);
     }
@@ -26,16 +28,12 @@ const defaultSchema: SchemasSettings = {
   fileMatch: ["**"],
 };
 
+document.getElementById("loading-msg")!.remove();
+
 const monacoYaml = configureMonacoYaml(monaco, {
   enableSchemaRequest: false,
   schemas: [defaultSchema],
 });
-
-// defaultSchema.schema.
-
-// monacoYaml.update({
-//   schemas:[]
-// })
 
 const uploadButton = document.getElementById(
   "upload-button-demo"
@@ -44,11 +42,10 @@ const uploadInput = document.getElementById("upload-name") as HTMLInputElement;
 
 const popUploadButton = document.getElementById("depublish-upload-button");
 
-const getUploadOptions = (): string[] =>
-  schema!.properties["uploads"]["items"]["enum"];
+const getUploadOptions = (): string[] => schema!.properties.uploads.items.enum;
 
 const setUploadOptions = (value: string[]): void => {
-  schema!.properties["uploads"]["items"]["enum"] = value;
+  schema!.properties.uploads.items.enum = value;
   monacoYaml.update({
     schemas: [defaultSchema],
   });
@@ -56,7 +53,7 @@ const setUploadOptions = (value: string[]): void => {
 
 const updateUploadOptions = (...value: string[]): boolean => {
   let knownUploads = getUploadOptions();
-  let sizeBefore = knownUploads.length;
+  const sizeBefore = knownUploads.length;
   knownUploads.push(...value);
   knownUploads = [...new Set(knownUploads)];
   setUploadOptions(knownUploads);
@@ -77,9 +74,13 @@ uploads:
   .replace(/:$/m, ": ")
   .trim();
 
-const ed = editor.create(document.getElementById("editor")!, {
+const ed = monaco.editor.create(document.getElementById("editor")!, {
   automaticLayout: true,
-  model: editor.createModel(value, "yaml", Uri.parse("monaco-yaml.yaml")),
+  model: monaco.editor.createModel(
+    value,
+    "yaml",
+    monaco.Uri.parse("monaco-yaml.yaml")
+  ),
   theme: window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "vs-dark"
     : "vs-light",
@@ -91,14 +92,14 @@ const ed = editor.create(document.getElementById("editor")!, {
   tabSize: TAB_SIZE,
 });
 
-editor.onDidChangeMarkers(([resource]) => {
+monaco.editor.onDidChangeMarkers(([resource]) => {
   const problems = document.getElementById("problems")!;
-  const markers = editor.getModelMarkers({ resource });
+  const markers = monaco.editor.getModelMarkers({ resource });
   while (problems.lastChild) {
     problems.lastChild.remove();
   }
   for (const marker of markers) {
-    if (marker.severity === MarkerSeverity.Hint) {
+    if (marker.severity === monaco.MarkerSeverity.Hint) {
       continue;
     }
     const wrapper = document.createElement("div");
@@ -108,7 +109,7 @@ editor.onDidChangeMarkers(([resource]) => {
     wrapper.classList.add("problem");
     codicon.classList.add(
       "codicon",
-      marker.severity === MarkerSeverity.Warning
+      marker.severity === monaco.MarkerSeverity.Warning
         ? "codicon-warning"
         : "codicon-error"
     );
@@ -127,43 +128,50 @@ editor.onDidChangeMarkers(([resource]) => {
 });
 
 uploadButton!.addEventListener("click", () => {
-  let text = uploadInput.value.trim() ?? "";
+  const text = uploadInput.value.trim() ?? "";
   if (text === "") return;
   const wasNew = updateUploadOptions(text);
   if (!wasNew) return;
 
-  let model = ed.getModel();
+  const model = ed.getModel();
 
-  let rawConfigText = model?.getValue() ?? "";
-  let config = yaml.parse(rawConfigText);
+  const rawConfigText = model?.getValue() ?? "";
+  const config = yaml.parse(rawConfigText);
   console.log(config);
 
-  let doc = yaml.parseDocument(rawConfigText);
-  let uploads = doc.get("uploads") as any | undefined;
+  const doc = yaml.parseDocument(rawConfigText);
+  let uploads = doc.get("uploads") as unknown as yaml.YAMLSeq | undefined;
   if (uploads === undefined) {
-    uploads = doc.createNode([]) as unknown as any;
+    uploads = doc.createNode([]) as unknown as yaml.YAMLSeq;
     doc.set("uploads", uploads);
   }
 
-  if (uploads["items"].find((i) => i["value"] === text) !== undefined) return;
+  if (
+    uploads.items.find(
+      (i) =>
+        ((i as yaml.Pair<yaml.ParsedNode, yaml.ParsedNode>)
+          .value as unknown as string) === text
+    ) !== undefined
+  )
+    return;
   const newUpload = doc.createNode(text);
   newUpload.comment =
     "This comment could contain a human readable ID for the Upload";
   uploads.add(newUpload);
 
   /*
-   Note this is text generated from the AST,
-   That means, formatting is done by the YAML lib.
-   While comments are preserved, some other hidden toekns like whitespace/indentation isn't.
-
-   For our purposes, this should be enough.
-  */
-  let roundTrippedText = doc.toString({ indent: TAB_SIZE });
+     Note this is text generated from the AST,
+     That means, formatting is done by the YAML lib.
+     While comments are preserved, some other hidden toekns like whitespace/indentation isn't.
+  
+     For our purposes, this should be enough.
+    */
+  const roundTrippedText = doc.toString({ indent: TAB_SIZE });
   model?.setValue(roundTrippedText);
 });
 
 popUploadButton!.addEventListener("click", () => {
-  let knownUploads = getUploadOptions();
+  const knownUploads = getUploadOptions();
   knownUploads.splice(0, 1);
   console.log(knownUploads);
   setUploadOptions(knownUploads);

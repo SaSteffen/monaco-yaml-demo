@@ -3,21 +3,27 @@
 
 <head>
   <meta charset="utf-8" />
-  <link rel="icon" type="image/svg+xml" href="<%= require('./icon.svg') %>" />
   <title>Monaco YAML</title>
   <meta name="description" content="YAML support for Monaco editor" />
   <meta name="theme-color" content="#42e3ff" />
 </head>
 
 <body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <script type="module" src="/src/index.ts"></script>
+
   <main>
     <div>
       <button id="upload-button-demo">Add Upload</button>
       <input id="upload-name" type="text" value="not-yet-accepted">
       <button id="depublish-upload-button">Pop-Front Upload</button>
     </div>
-    <div id="editor"></div>
-    <div id="problems"></div>
+    <div id="editor">
+      <div id="loading-msg">
+        <p>Editor is loading, please wait...</p>
+      </div>
+    </div>
+    <div id="problems">
   </main>
 </body>
 

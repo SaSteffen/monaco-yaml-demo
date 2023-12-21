@@ -4,22 +4,29 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "webpack serve --open --mode development",
-    "build": "webpack --mode production"
+    "start": "vite",
+    "build": "tsc --noemit && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.1",
     "@schemastore/schema-catalog": "^0.0.6",
-    "css-loader": "^6.8.1",
-    "css-minimizer-webpack-plugin": "^5.0.1",
-    "html-webpack-plugin": "^5.5.4",
-    "mini-css-extract-plugin": "^2.7.6",
     "monaco-editor": "^0.45.0",
     "monaco-yaml": "^5.1.0",
-    "ts-loader": "^9.5.1",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1",
     "yaml": "^2.3.4"
-  }
+  },
+  "devDependencies": {
+    "@types/eslint": "^8",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-svgr": "^4.2.0"
+  },
+  "packageManager": "yarn@4.0.2"
 }

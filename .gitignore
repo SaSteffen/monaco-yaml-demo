@@ -9,7 +9,10 @@
 # region: vim things ---------------------------------------------------
 .vim/*
 
-# region: yarn2 things -------------------------------------------------
-node_modules/
 build
 dist
+# region: yarn2 things -------------------------------------------------
+node_modules/
+.yarn/*
+!.yarn/plugins
+!.yarn/releases
